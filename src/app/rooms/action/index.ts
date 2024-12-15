@@ -435,8 +435,6 @@ export async function endGame(roomId: string) {
 
   const supabase = await createSupabaseServer()
 
-  console.log('Ending game:', roomId)
-
   try {
     const { data: roomUserData, error: roomUserDataError } = await supabase
       .from('room_user')

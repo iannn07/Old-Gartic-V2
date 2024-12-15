@@ -235,8 +235,6 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
     }
   })
 
-  console.log({ isTheGameStarted, isHost })
-
   return loading && !(roomUser && currentRoom) ? (
     <div className='w-full h-screen text-5xl font-bold'>Loading...</div>
   ) : !ableToStart ? (
@@ -308,8 +306,12 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
           </div>
         </div>
         <div className='flex flex-col col-span-1 gap-10'>
-          <CanvasComponent />
-          <SendAnswerComponent />
+          {isTheGameStarted && (
+            <>
+              <CanvasComponent roomId={roomId} />
+              <SendAnswerComponent />
+            </>
+          )}
         </div>
       </div>
     </div>
