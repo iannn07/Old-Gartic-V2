@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import GarticButton from '../../../components/Buttons/GarticButtons'
+import GarticButton from '@/components/Buttons/GarticButtons'
 import { registerWithEmail } from '@/app/auth/action'
 import { useRouter } from 'next/navigation'
 

@@ -15,7 +15,7 @@ function HomeComponent({ currentUser }: HomeComponentProps) {
       <div className='w-full p-20'>
         <div className='flex justify-center gap-5 w-full'>
           <div className='flex flex-col gap-10 items-center justify-center w-full'>
-            <h1 className='text-5xl font-bold text-center'>
+            <h1 className='text-5xl font-bold text-center text-white'>
               Welcome to Old Gartic.io!
             </h1>
 

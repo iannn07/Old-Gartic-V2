@@ -3,7 +3,7 @@
 import { signInWithEmail } from '@/app/auth/action'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import GarticButton from '../../../components/Buttons/GarticButtons'
+import GarticButton from '@/components/Buttons/GarticButtons'
 
 function LoginComponent() {
   const router = useRouter()

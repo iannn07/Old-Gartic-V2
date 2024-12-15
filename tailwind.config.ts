@@ -10,15 +10,17 @@ const config: Config = {
     extend: {
       fontFamily: {
         main: ['Chakra Petch', 'sans-serif'],
-        heading: ['Bungee Spice', 'cursive'],
-        honk: ['Honk', 'cursive'],
+        pixelifySans: ['Pixelify Sans', 'sans-serif'],
       },
       colors: {
         background: 'var(--background)',
         foreground: 'var(--foreground)',
         main: '#f4a127',
-        secondary: '#3D52D5',
+        secondary: '#273469',
         red: '#CC2936',
+        neonGreen: '#95C623',
+        neonPink: '#FF00FF',
+        yellow: '#fdfd96',
       },
     },
   },

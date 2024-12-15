@@ -13,9 +13,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en'>
-      <body className='font-main text-lg mx-20 my-10 antialiased'>
+      <body className='font-pixelifySans text-lg mx-20 my-10 antialiased bg-pattern'>
         <div className='mb-5 flex justify-between items-center'>
-          <h1 className='font-bold text-5xl'>Old Gartic.io</h1>
+          <h1 className='font-bold font-main text-5xl'>Old Gartic.io</h1>
         </div>
         {children}
       </body>
