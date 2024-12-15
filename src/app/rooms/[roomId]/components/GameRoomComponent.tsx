@@ -280,7 +280,7 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
   ) : (
     <div className='flex flex-col gap-10 w-full h-screen mt-20'>
       <div className='flex w-full justify-between items-center'>
-        <h1 className='text-5xl font-bold'>{currentRoom?.name}</h1>
+        <h1 className='text-6xl font-bold text-yellow'>{currentRoom?.name}</h1>
         <div className='flex gap-4'>
           {isHost && (
             <>
@@ -315,27 +315,28 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
         </div>
       </div>
       <div className='grid grid-cols-[1fr,2fr] w-full h-full gap-x-10'>
-        <div className='h-full border-8 border-main'>
+        <div className='h-full border-8 border-main bg-main/10'>
           <div className='w-full text-center font-bold text-2xl bg-main pb-2'>
             Players
           </div>
           <div className='p-5 h-full'>
-            {roomUser?.map((user, index) => (
+            {roomUser?.map((user) => (
               <div
                 className='flex flex-col gap-2 p-2 border-b border-white'
                 key={user?.id}
               >
                 <div className='flex items-center justify-between'>
-                  <div className='flex items-center gap-2'>
-                    <h1 className='text-xl font-semibold'>{index + 1}.</h1>
+                  <div className='flex items-center gap-2 justify-center bg-slate-50 text-black w-full animate-pulse'>
                     <h1
                       className={`text-xl ${
                         currentUser?.id !== user?.user?.id
-                          ? 'text-green-500'
-                          : 'text-main'
+                          ? 'text-neonGreen'
+                          : 'text-red font-bold'
                       }`}
                     >
-                      {user?.user?.name}
+                      {user?.user?.name === currentUser?.name && !user?.is_host
+                        ? user?.user?.name + ' (You)'
+                        : user?.user?.name}
                     </h1>
                     {user?.is_host && (
                       <span className='text-xl text-red-500 font-bold'>

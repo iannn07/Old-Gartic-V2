@@ -39,16 +39,18 @@ const SendAnswerComponent = ({
           )
         }, 10000)
 
-        handleEndGame()
-
         router.replace(`/rooms/${roomId}/finish`)
+
+        setTimeout(() => {
+          handleEndGame()
+        }, 10000)
       }
       setMessage(message)
     }
   }
 
   return (
-    <div className='border-8 border-secondary p-5 h-3/4 text-2xl flex flex-col items-center'>
+    <div className='border-8 border-secondary p-5 h-fit text-2xl flex flex-col items-center'>
       <form action={handleSubmit} className='flex flex-col items-center w-full'>
         <input
           type='text'

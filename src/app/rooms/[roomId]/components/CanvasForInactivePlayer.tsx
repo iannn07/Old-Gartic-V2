@@ -55,15 +55,19 @@ function CanvasForInactivePlayer({ gameId }: CanvasForInactivePlayerProps) {
   }, [gameId])
 
   return waitingForImage ? (
-    <div>Waiting for image...</div>
+    <div className='w-full text-5xl text-neonGreen animate-bounce text-center'>
+      Waiting for the host to draw...
+    </div>
   ) : (
-    <Image
-      src={image?.painting || ''}
-      alt='image'
-      width={400}
-      height={400}
-      className='bg-white w-full'
-    />
+    <div className='w-full flex justify-center items-center'>
+      <Image
+        src={image?.painting || ''}
+        alt='image'
+        width={400}
+        height={400}
+        className='bg-white w-1/2 object-contain'
+      />
+    </div>
   )
 }
 

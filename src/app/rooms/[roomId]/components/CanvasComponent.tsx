@@ -158,11 +158,11 @@ const CanvasComponent = ({ gameId }: CanvasComponentProps) => {
 
   return (
     <form
-      className='border-8 border-secondary gap-10 p-5 h-3/4 text-2xl flex flex-col items-center'
+      className='border-8 border-secondary bg-secondary/50 gap-10 p-5 h-fit text-2xl flex flex-col items-center'
       action={handleSubmit}
     >
       {hasSubmitted ? (
-        <h1>
+        <h1 className='text-5xl text-neonGreen text-center'>
           Submitted! Thanks for playing! Please wait for your opponent to guess
           your painting.
         </h1>
