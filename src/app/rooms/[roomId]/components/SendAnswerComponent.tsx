@@ -1,16 +1,17 @@
 'use client'
 
 import React, { useState } from 'react'
-import { submitAnswer } from '../../action'
+import { endGame, submitAnswer } from '../../action'
 import GarticButton from '@/components/Buttons/GarticButtons'
+import { useRouter } from 'next/navigation'
 
 interface SendAnswerComponentProps {
   gameId: string
+  roomId: string
 }
 
-const SendAnswerComponent: React.FC<SendAnswerComponentProps> = ({
-  gameId,
-}) => {
+const SendAnswerComponent = ({ gameId, roomId }: SendAnswerComponentProps) => {
+  const router = useRouter()
   const [answer, setAnswer] = useState<string>('')
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -18,7 +19,7 @@ const SendAnswerComponent: React.FC<SendAnswerComponentProps> = ({
   const handleSubmit = async (formData: FormData) => {
     const answer = formData.get('answer') as string
 
-    const { success, error, message } = await submitAnswer(gameId, answer)
+    const { success, error, message } = await submitAnswer(answer, gameId)
 
     if (error) {
       setError('Failed to submit answer')
@@ -26,8 +27,18 @@ const SendAnswerComponent: React.FC<SendAnswerComponentProps> = ({
 
     if (success) {
       setError(null)
-      setMessage(message)
-      setAnswer('')
+      if (message?.toLocaleLowerCase().includes('correct')) {
+        setTimeout(() => {
+          setMessage(
+            'Correct! You guessed the word! This game will end in 10 seconds.'
+          )
+        }, 10000)
+
+        await endGame(roomId)
+
+        router.replace(`/rooms/${roomId}/finish`)
+      }
+      setMessage('')
     }
   }
 
@@ -36,6 +47,7 @@ const SendAnswerComponent: React.FC<SendAnswerComponentProps> = ({
       <form action={handleSubmit} className='flex flex-col items-center w-full'>
         <input
           type='text'
+          name='answer'
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           placeholder='Enter your guess...'

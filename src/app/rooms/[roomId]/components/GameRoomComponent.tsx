@@ -356,6 +356,7 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
               {currentTurn !== currentUser?.id && (
                 <SendAnswerComponent
                   gameId={currentGame ? currentGame.id : ''}
+                  roomId={roomId}
                 />
               )}
             </>

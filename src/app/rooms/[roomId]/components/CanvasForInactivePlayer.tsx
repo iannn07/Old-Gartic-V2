@@ -1,9 +1,7 @@
 import { PAINTING } from '@/types/Painting'
-import React, { useEffect, useState } from 'react'
-import useSWR from 'swr'
-import { getSubmittedPainting } from '../../action'
-import Image from 'next/image'
 import { createSupabaseClient } from '@/utils/supabase/client'
+import Image from 'next/image'
+import { useEffect, useState } from 'react'
 
 interface CanvasForInactivePlayerProps {
   gameId: string
@@ -12,17 +10,6 @@ interface CanvasForInactivePlayerProps {
 function CanvasForInactivePlayer({ gameId }: CanvasForInactivePlayerProps) {
   const [waitingForImage, setWaitingForImage] = useState<boolean>(true)
   const [image, setImage] = useState<PAINTING | null>(null)
-
-  useSWR('image', async () => getSubmittedPainting(gameId), {
-    onSuccess: (data) => {
-      const { data: painting } = data
-
-      if (!painting) return
-
-      setImage(painting)
-      setWaitingForImage(false)
-    },
-  })
 
   useEffect(() => {
     const supabase = createSupabaseClient()

@@ -15,6 +15,7 @@ const CanvasComponent = ({ gameId }: CanvasComponentProps) => {
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null)
   const [color, setColor] = useState<string>('#000000')
   const [brushSize, setBrushSize] = useState<number>(2)
+  const [hasSubmitted, setHasSubmitted] = useState<boolean>(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -137,6 +138,8 @@ const CanvasComponent = ({ gameId }: CanvasComponentProps) => {
     }
 
     await submitPaintingAnswer(painting)
+
+    setHasSubmitted(true)
   }
 
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,47 +155,57 @@ const CanvasComponent = ({ gameId }: CanvasComponentProps) => {
       className='border-8 border-secondary gap-10 p-5 h-3/4 text-2xl flex flex-col items-center'
       action={handleSubmit}
     >
-      <div className='flex gap-4 mb-2'>
-        <label>
-          Color:
-          <input
-            type='color'
-            value={color}
-            onChange={handleColorChange}
-            className='ml-2'
+      {hasSubmitted ? (
+        <h1>Submitted! Thanks for playing</h1>
+      ) : (
+        <>
+          <div className='flex gap-4 mb-2'>
+            <label>
+              Color:
+              <input
+                type='color'
+                value={color}
+                onChange={handleColorChange}
+                className='ml-2'
+              />
+            </label>
+            <label>
+              Brush Size:
+              <input
+                type='range'
+                min='1'
+                max='10'
+                value={brushSize}
+                onChange={handleBrushSizeChange}
+                className='ml-2'
+              />
+            </label>
+          </div>
+          <canvas
+            ref={canvasRef}
+            className='mb-4 border bg-white cursor-crosshair'
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={endDrawing}
+            onMouseLeave={endDrawing}
+            onTouchStart={startDrawingTouch}
+            onTouchMove={drawTouch}
+            onTouchEnd={endDrawingTouch}
           />
-        </label>
-        <label>
-          Brush Size:
-          <input
-            type='range'
-            min='1'
-            max='10'
-            value={brushSize}
-            onChange={handleBrushSizeChange}
-            className='ml-2'
-          />
-        </label>
-      </div>
-      <canvas
-        ref={canvasRef}
-        className='mb-4 border bg-white cursor-crosshair'
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={endDrawing}
-        onMouseLeave={endDrawing}
-        onTouchStart={startDrawingTouch}
-        onTouchMove={drawTouch}
-        onTouchEnd={endDrawingTouch}
-      />
-      <div className='flex flex-col gap-2'>
-        <label>Answer:</label>
-        <input type='text' name='answer' className='px-1 text-black' />
-      </div>
-      <div className='flex gap-4 mb-4'>
-        <GarticButton label='Clear' variant='danger' onClick={handleClear} />
-        <GarticButton label='Submit Drawing' variant='main' type='submit' />
-      </div>
+          <div className='flex flex-col gap-2'>
+            <label>Answer:</label>
+            <input type='text' name='answer' className='px-1 text-black' />
+          </div>
+          <div className='flex gap-4 mb-4'>
+            <GarticButton
+              label='Clear'
+              variant='danger'
+              onClick={handleClear}
+            />
+            <GarticButton label='Submit Drawing' variant='main' type='submit' />
+          </div>
+        </>
+      )}
     </form>
   )
 }

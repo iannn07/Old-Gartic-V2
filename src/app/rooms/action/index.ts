@@ -730,10 +730,14 @@ export async function submitAnswer(answer: string, gameId: string) {
       const randomPlayer = Math.floor(Math.random() * allPlayers.length)
       const nextTurn = allPlayers[randomPlayer].user_id
 
-      const { error: gameError } = await supabase.from('game').update({
-        current_turn: nextTurn,
-        status: 'Drawing',
-      })
+      const { error: gameError } = await supabase
+        .from('game')
+        .update({
+          current_turn: nextTurn,
+          status: 'Drawing',
+        })
+        .eq('id', gameId)
+        .single()
 
       if (gameError) {
         console.error('An error occurred while updating game:', gameError)
