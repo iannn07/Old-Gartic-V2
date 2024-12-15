@@ -1,31 +1,137 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
+import GarticButton from '@/components/Buttons/GarticButtons'
 import { ROOMS_USER } from '@/types/Relationship'
-import React, { useState } from 'react'
-import useSWR from 'swr'
-import { getAllUsersInRoom } from '../../action'
+import { ROOMS } from '@/types/Rooms'
+import { USER } from '@/types/User'
+import { getCurrentUser } from '@/utils/auth/session'
 import { createSupabaseClient } from '@/utils/supabase/client'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import useSWR from 'swr'
+import {
+  assignFirstUserAsHost,
+  getAllUsersInRoom,
+  getSingleRoom,
+  removeUserFromRoom,
+} from '../../action'
+import CanvasComponent from './CanvasComponent'
+import SendAnswerComponent from './SendAnswerComponent'
 
 interface GameRoomComponentProps {
   roomId: string
 }
 
 function GameRoomComponent({ roomId }: GameRoomComponentProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState<boolean>(true)
+  const [currentUser, setCurrentUser] = useState<USER | null>(null)
+  const [currentRoom, setCurrentRoom] = useState<ROOMS | null>(null)
   const [roomUser, setRoomUser] = useState<ROOMS_USER[] | null>(null)
+  const [isHost, setIsHost] = useState<boolean>(false)
+  const [ableToStart, setAbleToStart] = useState<boolean>(false)
+
+  const handleExitRoom = async () => {
+    await removeUserFromRoom(roomId)
+
+    router.replace('/rooms')
+  }
+
+  const handleStartGame = async () => {
+    if (isHost && ableToStart) {
+    }
+  }
+
+  useSWR('currentUser', getCurrentUser, {
+    onSuccess: (data) => {
+      const { data: userData, error } = data
+      if (error) return
+      setCurrentUser(userData)
+    },
+  })
+
+  useSWR('currentRoom', async () => await getSingleRoom(roomId), {
+    onSuccess: (data) => {
+      const { data: roomData, error } = data
+      if (error) return
+      setCurrentRoom(roomData)
+    },
+  })
+
+  useSWR(
+    roomId,
+    async () => {
+      const { data } = await assignFirstUserAsHost(roomId)
+
+      const canStart = (roomUser?.length ?? 0) >= 2
+
+      return { data, ableToStart: canStart }
+    },
+    {
+      onSuccess: (data) => {
+        const { data: hostId, ableToStart } = data
+
+        setIsHost(hostId?.id === currentUser?.id)
+        setAbleToStart(ableToStart)
+      },
+    }
+  )
+
+  // Handle user leaving the room
+  useEffect(() => {
+    const handlePopState = async () => {
+      await removeUserFromRoom(roomId)
+    }
+
+    const handleBeforeUnload = async () => {
+      await removeUserFromRoom(roomId)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [roomId])
+
+  // Update ableToStart state
+  useEffect(() => {
+    if (roomUser && roomUser.length >= 2) {
+      setAbleToStart(true)
+    } else {
+      setAbleToStart(false)
+    }
+  }, [roomUser])
 
   useSWR('roomUser', () => {
     let subscription: any
 
     const supabase = createSupabaseClient()
 
+    const updateRoomActivePlayers = async (roomId: string) => {
+      const { data, error } = await supabase
+        .from('room_user')
+        .select('id')
+        .eq('room_id', roomId)
+
+      if (error) return
+
+      const activePlayerCount = data?.length || 0
+      const { error: updateError } = await supabase
+        .from('rooms')
+        .update({ total_active_player: activePlayerCount })
+        .eq('id', roomId)
+
+      if (updateError) return
+    }
+
     const fetchRoomUser = async () => {
       const { data, error } = await getAllUsersInRoom(roomId)
 
-      if (error) {
-        return
-      }
+      if (error) return
 
       setRoomUser(data)
       setLoading(false)
@@ -35,7 +141,7 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'room_user' },
-          (payload) => {
+          async (payload) => {
             if (payload.eventType === 'DELETE') {
               setRoomUser(
                 (prevUsers) =>
@@ -62,16 +168,15 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
                   return [...(prevUsers || []), newUser]
                 }
               })
+              await updateRoomActivePlayers(newUser.room_id)
             }
           }
         )
         .subscribe()
     }
 
-    // Fetch initial data and set up the listener
     fetchRoomUser()
 
-    // Cleanup on unmount
     return () => {
       if (subscription) {
         supabase.removeChannel(subscription)
@@ -79,29 +184,59 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
     }
   })
 
-  return loading ? (
+  return loading && !(roomUser && currentRoom) ? (
     <div className='w-full h-screen text-5xl font-bold'>Loading...</div>
+  ) : !ableToStart ? (
+    <div className='w-full h-screen text-5xl font-bold'>
+      Please wait for other players to join...
+    </div>
   ) : (
-    <div className='grid-cols-3 w-full h-screen grid'>
-      <div className='w-full h-full'>
-        <div className='w-full text-center font-bold'>Players</div>
-        <div className='bg-white text-black h-full'>
-          {roomUser?.map((user) => (
-            <div key={user.id} className='flex justify-between'>
-              <div>{user.user.id}</div>
-              <div>{user.user.name}</div>
-            </div>
-          ))}
+    <div className='flex flex-col gap-10 w-full h-screen mt-20'>
+      <div className='flex w-full justify-between'>
+        <h1 className='text-5xl font-bold'>{currentRoom?.name}</h1>
+        <GarticButton
+          label='Start Game'
+          variant={!isHost ? 'danger' : 'main'}
+          onClick={handleStartGame}
+          disabled={!isHost || !ableToStart}
+        />
+        <GarticButton
+          label='Exit Room'
+          variant='danger'
+          onClick={handleExitRoom}
+        />
+      </div>
+      <div className='grid grid-cols-[1fr,2fr,1fr] w-full h-full gap-x-10'>
+        <div className='h-full border-8 border-main'>
+          <div className='w-full text-center font-bold text-2xl bg-main pb-2'>
+            Players
+          </div>
+          <div className='p-5 h-full'>
+            {roomUser?.map((user, index) => (
+              <div
+                className='flex flex-col gap-2 p-2 border-b border-white'
+                key={user?.id}
+              >
+                <div className='flex items-center justify-between'>
+                  <div className='flex items-center gap-2'>
+                    <h1 className='text-xl font-semibold'>{index + 1}.</h1>
+                    <h1 className='text-xl'>{user?.user?.name}</h1>
+                    {user?.is_host && (
+                      <span className='text-xl text-red-500 font-bold'>
+                        (Host)
+                      </span>
+                    )}
+                  </div>
+                  <h1 className='text-xl'>Score: {user?.score}</h1>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-      <div className='flex flex-col w-full gap-10'>
-        <div className='bg-purple-500'>CANVAS</div>
-        <div className='bg-blue-500'>ANSWER SUBMISSION</div>
-      </div>
-      <div className='flex flex-col justify-between h-full w-full'>
-        <div className='w-full text-center font-bold'>Chats</div>
-        <div className='bg-white text-black h-full'>CHAT CONTENTS</div>
-        <div className='w-full'>SEND SECTION</div>
+        <div className='flex flex-col col-span-1 gap-10'>
+          <CanvasComponent />
+          <SendAnswerComponent />
+        </div>
       </div>
     </div>
   )
