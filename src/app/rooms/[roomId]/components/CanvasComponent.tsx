@@ -4,12 +4,14 @@ import GarticButton from '@/components/Buttons/GarticButtons'
 import { prepareFileBeforeUpload } from '@/utils/supabase/client_storage'
 import React, { useEffect, useRef, useState } from 'react'
 import { submitPaintingAnswer } from '../../action'
+import { useRouter } from 'next/navigation'
 
 interface CanvasComponentProps {
   gameId: string
 }
 
 const CanvasComponent = ({ gameId }: CanvasComponentProps) => {
+  const router = useRouter()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null)
@@ -140,6 +142,10 @@ const CanvasComponent = ({ gameId }: CanvasComponentProps) => {
     await submitPaintingAnswer(painting)
 
     setHasSubmitted(true)
+
+    setTimeout(() => {
+      router.replace('/')
+    }, 10000)
   }
 
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,7 +162,10 @@ const CanvasComponent = ({ gameId }: CanvasComponentProps) => {
       action={handleSubmit}
     >
       {hasSubmitted ? (
-        <h1>Submitted! Thanks for playing</h1>
+        <h1>
+          Submitted! Thanks for playing! Please wait for your opponent to guess
+          your painting.
+        </h1>
       ) : (
         <>
           <div className='flex gap-4 mb-2'>
@@ -198,6 +207,7 @@ const CanvasComponent = ({ gameId }: CanvasComponentProps) => {
           </div>
           <div className='flex gap-4 mb-4'>
             <GarticButton
+              type='button'
               label='Clear'
               variant='danger'
               onClick={handleClear}

@@ -629,14 +629,7 @@ export async function getSubmittedPainting(gameId: string) {
       return { data: null, error: error }
     }
 
-    const paintingImage = await getPublicStorageURL(data.painting, 'painting')
-
-    const dataWithImage: PAINTING = {
-      ...data,
-      painting: paintingImage,
-    }
-
-    return { data: dataWithImage as PAINTING, error: null }
+    return { data: data as PAINTING, error: null }
   } catch (error) {
     console.error(
       'An unexpected error occurred while fetching painting:',
@@ -706,8 +699,12 @@ export async function submitAnswer(answer: string, gameId: string) {
     }
 
     const currentPainting: PAINTING = paintingData
+    const isCorrect =
+      currentPainting.answer.toLowerCase() === answer.toLowerCase()
 
-    if (currentPainting.answer.toLowerCase() === answer.toLowerCase()) {
+    console.log({ isCorrect })
+
+    if (isCorrect) {
       const { data: allPlayers, error: allPlayersError } = await supabase
         .from('room_user')
         .select('*')

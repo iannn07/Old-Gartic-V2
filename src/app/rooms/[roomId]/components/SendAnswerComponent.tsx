@@ -1,16 +1,21 @@
 'use client'
 
-import React, { useState } from 'react'
-import { endGame, submitAnswer } from '../../action'
 import GarticButton from '@/components/Buttons/GarticButtons'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { submitAnswer } from '../../action'
 
 interface SendAnswerComponentProps {
   gameId: string
   roomId: string
+  handleEndGame: () => void
 }
 
-const SendAnswerComponent = ({ gameId, roomId }: SendAnswerComponentProps) => {
+const SendAnswerComponent = ({
+  gameId,
+  roomId,
+  handleEndGame,
+}: SendAnswerComponentProps) => {
   const router = useRouter()
   const [answer, setAnswer] = useState<string>('')
   const [message, setMessage] = useState<string | null>(null)
@@ -27,18 +32,18 @@ const SendAnswerComponent = ({ gameId, roomId }: SendAnswerComponentProps) => {
 
     if (success) {
       setError(null)
-      if (message?.toLocaleLowerCase().includes('correct')) {
+      if (message !== 'Incorrect answer!') {
         setTimeout(() => {
           setMessage(
             'Correct! You guessed the word! This game will end in 10 seconds.'
           )
         }, 10000)
 
-        await endGame(roomId)
+        handleEndGame()
 
         router.replace(`/rooms/${roomId}/finish`)
       }
-      setMessage('')
+      setMessage(message)
     }
   }
 
@@ -57,9 +62,7 @@ const SendAnswerComponent = ({ gameId, roomId }: SendAnswerComponentProps) => {
         {message && (
           <p
             className={`${
-              message.toLowerCase().includes('correct')
-                ? 'text-green-500'
-                : 'text-red'
+              message !== 'Incorrect answer!' ? 'text-green-500' : 'text-red'
             }`}
           >
             {message}

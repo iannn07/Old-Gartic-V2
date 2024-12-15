@@ -156,8 +156,13 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'game' },
         (payload) => {
-          if (payload.eventType === 'DELETE') {
-            router.replace('/rooms')
+          if (
+            payload.eventType === 'DELETE' ||
+            payload.eventType === 'UPDATE'
+          ) {
+            if (payload.eventType === 'DELETE' || payload.new.is_completed) {
+              router.replace('/rooms')
+            }
           }
         }
       )
@@ -357,6 +362,7 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
                 <SendAnswerComponent
                   gameId={currentGame ? currentGame.id : ''}
                   roomId={roomId}
+                  handleEndGame={handleEndGame}
                 />
               )}
             </>
