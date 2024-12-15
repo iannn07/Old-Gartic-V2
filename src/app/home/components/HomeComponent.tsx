@@ -16,20 +16,15 @@ function HomeComponent({ currentUser }: HomeComponentProps) {
         {/* Inner Box */}
         <div className='flex flex-col items-center gap-10'>
           {/* Welcome Header */}
-          <h1 className='text-5xl text-center text-yellow'>
+          <h1 className='text-5xl text-center text-yellow drop-shadow-[0_0_5px_yellow]'>
             Welcome to Old Gartic.io!
           </h1>
 
           {/* User Greeting and Prompt */}
           <div className='flex flex-col items-center gap-5 w-full'>
             <h1
-              className={`text-4xl text-center 
-              bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 
-              text-transparent bg-clip-text
-              [text-shadow:0_0_2px_rgba(0,255,0,0.8),0_0_10px_rgba(0,0,255,0.6),0_0_15px_rgba(128,0,128,0.4)]
-              transition duration-300 ease-in-out
-              hover:[text-shadow:0_0_2px_rgba(0,255,255,1),0_0_12px_rgba(0,191,255,0.8),0_0_18px_rgba(75,0,130,0.6)]
-            `}
+              className='text-4xl text-center text-neonGreen
+              hover:text-blue-500 cursor-pointer transition-colors duration-300'
             >
               Hi, {currentUser.name}! Are you ready to DRAW, GUESS, and WIN?
             </h1>

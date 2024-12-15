@@ -6,14 +6,14 @@ export default async function Rootpage() {
     <div className='w-full text-neonGreen'>
       {/* Header */}
       <div className='flex flex-col items-center mt-10'>
-        <h1 className='text-9xl text-yellow track blinking'>
+        <h1 className='text-9xl text-yellow drop-shadow-[0_0_5px_yellow] track blinking'>
           DRAW, GUESS, WIN
         </h1>
       </div>
 
       <div className='flex justify-center mt-20'>
         <Link href='/auth/login'>
-          <p className='text-5xl text-neonGreen underline hover:text-neonPink cursor-pointer'>
+          <p className='text-5xl text-neonGreen underline hover:text-neonPink cursor-pointer transition-colors duration-300'>
             &gt; Click here to start playing
           </p>
         </Link>

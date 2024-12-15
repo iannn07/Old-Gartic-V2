@@ -280,7 +280,9 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
   ) : (
     <div className='flex flex-col gap-10 w-full h-screen mt-20'>
       <div className='flex w-full justify-between items-center'>
-        <h1 className='text-6xl font-bold text-yellow'>{currentRoom?.name}</h1>
+        <h1 className='text-6xl font-bold drop-shadow-[0_0_5px_yellow] text-yellow'>
+          {currentRoom?.name}
+        </h1>
         <div className='flex gap-4'>
           {isHost && (
             <>
