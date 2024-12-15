@@ -40,7 +40,13 @@ function AuthComponent({ type = 'login' }: AuthComponentProps) {
           <div className='flex flex-col w-full justify-between items-center gap-5'>
             <div className='flex gap-2 items-center justify-center w-full'>
               <h1 className='text-5xl'>{type.toUpperCase()}</h1>
-              <Image src='/images/dog.gif' width={75} height={75} alt='Logo' />
+              <Image
+                priority
+                src='/images/dog.gif'
+                width={75}
+                height={75}
+                alt='Logo'
+              />
             </div>
             {renderFormHeader(type)}
 

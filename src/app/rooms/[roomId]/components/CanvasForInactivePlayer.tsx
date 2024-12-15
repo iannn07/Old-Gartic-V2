@@ -61,6 +61,7 @@ function CanvasForInactivePlayer({ gameId }: CanvasForInactivePlayerProps) {
   ) : (
     <div className='w-full flex justify-center items-center'>
       <Image
+        priority
         src={image?.painting || ''}
         alt='image'
         width={400}

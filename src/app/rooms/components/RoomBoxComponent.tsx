@@ -28,6 +28,7 @@ function RoomBoxComponent({ rooms }: RoomBoxComponentProps) {
       </h1>
       <div className='w-full max-w-64 h-32'>
         <Image
+          priority
           src={rooms.icon}
           alt={`${rooms.name} Room Icon`}
           width={150}

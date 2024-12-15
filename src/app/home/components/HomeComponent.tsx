@@ -38,6 +38,7 @@ function HomeComponent({ currentUser }: HomeComponentProps) {
           {/* Decorative Arrows */}
           <div className='flex justify-center items-center gap-10 mt-5 w-full'>
             <Image
+              priority
               src={'/images/pink-arrow.gif'}
               alt='Left Arrow'
               height={175}
@@ -45,6 +46,7 @@ function HomeComponent({ currentUser }: HomeComponentProps) {
               className='animate-pulse rotate-45'
             />
             <Image
+              priority
               src={
                 'https://media.giphy.com/media/K34P4lmirzFTc889hQ/giphy.gif?cid=790b76119p7zj8ezaq8ryrg03xh3oaohl76prx0w1z1fmyzn&ep=v1_gifs_search&rid=giphy.gif&ct=g'
               }
@@ -53,6 +55,7 @@ function HomeComponent({ currentUser }: HomeComponentProps) {
               width={200}
             />
             <Image
+              priority
               src={'/images/pink-arrow.gif'}
               alt='Right Arrow'
               height={175}

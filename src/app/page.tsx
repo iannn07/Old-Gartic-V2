@@ -21,6 +21,7 @@ export default async function Rootpage() {
 
       <div className='flex justify-around items-center mt-32'>
         <Image
+          priority
           src='https://media.giphy.com/media/VWR9XJBYxpXR4EiqLQ/giphy.gif?cid=790b7611jxv4f8ebv89nh60votn7b1ss00f9f2v7fqwjfmdv&ep=v1_gifs_search&rid=giphy.gif&ct=g'
           width={250}
           height={250}
@@ -28,6 +29,7 @@ export default async function Rootpage() {
           className='pixelated'
         />
         <Image
+          priority
           src='https://media.giphy.com/media/d2Z7NqwF3yImFNHW/giphy.gif?cid=ecf05e47ythy5wqtib4ggxptn9x216tr9c89oh39ow1e250e&ep=v1_gifs_search&rid=giphy.gif&ct=g'
           width={200}
           height={200}
@@ -35,6 +37,7 @@ export default async function Rootpage() {
           className='pixelated'
         />
         <Image
+          priority
           src='https://media.giphy.com/media/RG01kHJGpCAY8/giphy.gif?cid=ecf05e47ythy5wqtib4ggxptn9x216tr9c89oh39ow1e250e&ep=v1_gifs_search&rid=giphy.gif&ct=g'
           width={250}
           height={250}
