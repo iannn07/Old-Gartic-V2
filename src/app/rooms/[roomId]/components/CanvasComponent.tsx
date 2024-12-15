@@ -1,23 +1,20 @@
 'use client'
 
 import GarticButton from '@/components/Buttons/GarticButtons'
-import { createSupabaseClient } from '@/utils/supabase/client'
+import { prepareFileBeforeUpload } from '@/utils/supabase/client_storage'
 import React, { useEffect, useRef, useState } from 'react'
+import { submitPaintingAnswer } from '../../action'
 
 interface CanvasComponentProps {
-  roomId: string
+  gameId: string
 }
 
-const CanvasComponent = ({ roomId }: CanvasComponentProps) => {
+const CanvasComponent = ({ gameId }: CanvasComponentProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null)
   const [color, setColor] = useState<string>('#000000')
   const [brushSize, setBrushSize] = useState<number>(2)
-  const [loading, setLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
-  const supabase = createSupabaseClient()
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -107,7 +104,40 @@ const CanvasComponent = ({ roomId }: CanvasComponentProps) => {
     }
   }
 
-  const handleSubmit = async () => {}
+  const handleSubmit = async (form: FormData) => {
+    const canvas = canvasRef.current
+    if (!canvas) {
+      throw new Error('Canvas not available.')
+    }
+
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((blob) => {
+        resolve(blob)
+      }, 'image/png')
+    })
+
+    if (!blob) {
+      throw new Error('Failed to convert canvas to blob.')
+    }
+
+    const file = new File([blob], `painting_${Date.now()}.png`, {
+      type: 'image/png',
+    })
+
+    const paintingPath = await prepareFileBeforeUpload('painting', file)
+
+    if (!paintingPath) {
+      return
+    }
+
+    const painting = {
+      game_id: gameId,
+      painting: paintingPath,
+      answer: form.get('answer') as string,
+    }
+
+    await submitPaintingAnswer(painting)
+  }
 
   const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setColor(e.target.value)
@@ -118,7 +148,10 @@ const CanvasComponent = ({ roomId }: CanvasComponentProps) => {
   }
 
   return (
-    <div className='border-8 border-secondary p-5 h-3/4 text-2xl flex flex-col items-center'>
+    <form
+      className='border-8 border-secondary gap-10 p-5 h-3/4 text-2xl flex flex-col items-center'
+      action={handleSubmit}
+    >
       <div className='flex gap-4 mb-2'>
         <label>
           Color:
@@ -143,7 +176,7 @@ const CanvasComponent = ({ roomId }: CanvasComponentProps) => {
       </div>
       <canvas
         ref={canvasRef}
-        className='mb-4 border border-gray-300 cursor-crosshair'
+        className='mb-4 border bg-white cursor-crosshair'
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={endDrawing}
@@ -152,23 +185,15 @@ const CanvasComponent = ({ roomId }: CanvasComponentProps) => {
         onTouchMove={drawTouch}
         onTouchEnd={endDrawingTouch}
       />
-      <div className='flex gap-4 mb-4'>
-        <GarticButton
-          label='Clear'
-          variant='danger'
-          onClick={handleClear}
-          disabled={loading}
-        />
+      <div className='flex flex-col gap-2'>
+        <label>Answer:</label>
+        <input type='text' name='answer' className='px-1' />
       </div>
-      <GarticButton
-        label={loading ? 'Submitting...' : 'Submit Painting'}
-        variant='main'
-        onClick={handleSubmit}
-        disabled={loading}
-      />
-      {error && <p className='text-red mt-2'>{error}</p>}
-      {success && <p className='text-main mt-2'>{success}</p>}
-    </div>
+      <div className='flex gap-4 mb-4'>
+        <GarticButton label='Clear' variant='danger' onClick={handleClear} />
+        <GarticButton label='Submit Drawing' variant='main' type='submit' />
+      </div>
+    </form>
   )
 }
 

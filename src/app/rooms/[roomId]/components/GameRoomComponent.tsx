@@ -21,6 +21,8 @@ import {
 } from '../../action'
 import CanvasComponent from './CanvasComponent'
 import SendAnswerComponent from './SendAnswerComponent'
+import { GAME } from '@/types/Game'
+import CanvasForInactivePlayer from './CanvasForInactivePlayer'
 
 interface GameRoomComponentProps {
   roomId: string
@@ -35,6 +37,8 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
   const [isHost, setIsHost] = useState<boolean>(false)
   const [ableToStart, setAbleToStart] = useState<boolean>(false)
   const [isTheGameStarted, setIsTheGameStarted] = useState<boolean>(false)
+  const [currentGame, setCurrentGame] = useState<GAME | null>(null)
+  const [currentTurn, setCurrentTurn] = useState<string | null>(null)
 
   const handleExitRoom = async () => {
     await removeUserFromRoom(roomId)
@@ -44,8 +48,12 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
 
   const handleStartGame = async () => {
     if (isHost && ableToStart && currentUser) {
-      await startGame(roomId, currentUser.id)
+      const { data, error } = await startGame(roomId, currentUser.id)
+
+      if (error) return
+
       setIsTheGameStarted(true)
+      setCurrentGame(data)
     }
   }
 
@@ -82,7 +90,11 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
 
       if (ableToStart) setAbleToStart(ableToStart)
 
-      if (gameStartedData) setIsTheGameStarted(true)
+      if (gameStartedData) {
+        setIsTheGameStarted(true)
+        setCurrentGame(gameStartedData)
+        setCurrentTurn(gameStartedData.current_turn)
+      }
     },
   })
 
@@ -235,6 +247,25 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
     }
   })
 
+  useSWR('currentGame', () => {
+    const supabase = createSupabaseClient()
+
+    const subscription = supabase
+      .channel('public:game')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'game' },
+        (payload) => {
+          setCurrentGame(payload.new.current_turn)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(subscription)
+    }
+  })
+
   return loading && !(roomUser && currentRoom) ? (
     <div className='w-full h-screen text-5xl font-bold'>Loading...</div>
   ) : !ableToStart ? (
@@ -292,7 +323,15 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-2'>
                     <h1 className='text-xl font-semibold'>{index + 1}.</h1>
-                    <h1 className='text-xl'>{user?.user?.name}</h1>
+                    <h1
+                      className={`text-xl ${
+                        currentUser?.id !== user?.user?.id
+                          ? 'text-green-500'
+                          : 'text-main'
+                      }`}
+                    >
+                      {user?.user?.name}
+                    </h1>
                     {user?.is_host && (
                       <span className='text-xl text-red-500 font-bold'>
                         (Host)
@@ -308,8 +347,18 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
         <div className='flex flex-col col-span-1 gap-10'>
           {isTheGameStarted && (
             <>
-              <CanvasComponent roomId={roomId} />
-              <SendAnswerComponent />
+              {currentTurn === currentUser?.id ? (
+                <CanvasComponent gameId={currentGame ? currentGame.id : ''} />
+              ) : (
+                <CanvasForInactivePlayer
+                  gameId={currentGame ? currentGame.id : ''}
+                />
+              )}
+              {currentTurn !== currentUser?.id && (
+                <SendAnswerComponent
+                  gameId={currentGame ? currentGame.id : ''}
+                />
+              )}
             </>
           )}
         </div>

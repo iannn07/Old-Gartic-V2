@@ -1,6 +1,7 @@
 'use server'
 
 import { GAME } from '@/types/Game'
+import { PAINTING } from '@/types/Painting'
 import { ROOMS_USER } from '@/types/Relationship'
 import { ROOMS } from '@/types/Rooms'
 import { USER } from '@/types/User'
@@ -367,9 +368,21 @@ export async function checkIfTheGameStarted(roomId: string) {
       return { ableToStart: false, data: null, error: error }
     }
 
+    const { data: gameData, error: gameError } = await supabase
+      .from('game')
+      .select('*')
+      .eq('id', data[0].game_id)
+      .single()
+
+    if (gameError) {
+      console.error('An error occurred while fetching game:', gameError)
+
+      return { ableToStart: false, data: null, error: gameError }
+    }
+
     console.log('The game has started:', data)
 
-    return { ableToStart: false, data: data, error: null }
+    return { ableToStart: false, data: gameData as GAME, error: null }
   } catch (error) {
     console.error('An unexpected error occurred while checking game:', error)
 
@@ -418,6 +431,8 @@ export async function startGame(roomId: string, hostId: string) {
     }
 
     revalidatePath(`/rooms/${roomId}`)
+
+    return { data: gameData, error: null }
   } catch (error) {
     console.error('An unexpected error occurred while starting game:', error)
 
@@ -503,22 +518,221 @@ export async function endGame(roomId: string) {
 }
 
 /**
- * * Track user turn
- * @param gameId
+ * * Submit a painting
+ * @param painting
  * @returns
  */
-export async function trackUserTurn(gameId: string) {
+export async function submitPaintingAnswer(painting: {
+  game_id: string
+  answer: string
+  painting: string
+}) {
   unstable_noStore()
 
   const supabase = await createSupabaseServer()
 
   try {
+    const { data: userData, error: userDataError } = await getCurrentUser()
+
+    if (userDataError || !userData) {
+      return { success: false, error: userDataError }
+    }
+
+    const userId = userData.id
+
+    const paintObject = {
+      game_id: painting.game_id,
+      user_id: userId,
+      answer: painting.answer,
+      painting: painting.painting,
+    }
+
+    const { error: paintingError } = await supabase
+      .from('painting')
+      .insert(paintObject)
+      .select('*')
+      .single()
+
+    if (paintingError) {
+      console.error(
+        'An error occurred while submitting painting:',
+        paintingError
+      )
+
+      return { success: false, error: paintingError }
+    }
+
+    const { data: roomUserData, error: roomUserDataError } = await supabase
+      .from('room_user')
+      .select('*')
+      .eq('game_id', painting.game_id)
+      .single()
+
+    if (roomUserDataError) {
+      console.error(
+        'An error occurred while fetching room user data:',
+        roomUserDataError
+      )
+    }
+
+    revalidatePath(`/rooms/${roomUserData.room_id}`)
+
+    return { success: true, error: null }
   } catch (error) {
     console.error(
-      'An unexpected error occurred while tracking user turn:',
+      'An unexpected error occurred while submitting painting:',
+      error
+    )
+
+    return { success: false, error: error }
+  }
+}
+
+/**
+ * * Get the submitted painting
+ * @param gameId
+ * @returns
+ */
+export async function getSubmittedPainting(gameId: string) {
+  unstable_noStore()
+
+  const supabase = await createSupabaseServer()
+
+  try {
+    const { data, error } = await supabase
+      .from('painting')
+      .select('*')
+      .eq('game_id', gameId)
+      .single()
+
+    if (error) {
+      console.error('An error occurred while fetching painting:', error)
+
+      return { data: null, error: error }
+    }
+
+    const paintingImage = await getPublicStorageURL(data.painting, 'painting')
+
+    const dataWithImage: PAINTING = {
+      ...data,
+      painting: paintingImage,
+    }
+
+    return { data: dataWithImage as PAINTING, error: null }
+  } catch (error) {
+    console.error(
+      'An unexpected error occurred while fetching painting:',
       error
     )
 
     return { data: null, error: error }
+  }
+}
+
+/**
+ * * Submit an answer
+ * @param answer
+ * @param gameId
+ * @returns
+ */
+export async function submitAnswer(answer: string, gameId: string) {
+  unstable_noStore()
+
+  const supabase = await createSupabaseServer()
+
+  try {
+    const { data: userData, error: userDataError } = await getCurrentUser()
+
+    if (userDataError || !userData) {
+      return {
+        success: false,
+        error: userDataError,
+        answer: null,
+        message: null,
+      }
+    }
+
+    const userId = userData.id
+
+    const { data: answerData, error: answerError } = await supabase
+      .from('answer')
+      .insert({
+        game_id: gameId,
+        user_id: userId,
+        answer: answer.trim(),
+      })
+      .select('*')
+      .single()
+
+    if (answerError) {
+      return { success: false, error: answerError, answer: null, message: null }
+    }
+
+    const { data: paintingData, error: paintingError } = await supabase
+      .from('painting')
+      .select('*')
+      .eq('game_id', gameId)
+      .single()
+
+    if (paintingError) {
+      return {
+        success: false,
+        error: paintingError,
+        answer: null,
+        message: null,
+      }
+    }
+
+    const currentPainting: PAINTING = paintingData
+
+    if (currentPainting.answer.toLowerCase() === answer.toLowerCase()) {
+      const { data: allPlayers, error: allPlayersError } = await supabase
+        .from('room_user')
+        .select('*')
+        .eq('game_id', gameId)
+
+      if (allPlayersError) {
+        return {
+          success: false,
+          error: allPlayersError,
+          answer: null,
+          message: null,
+        }
+      }
+
+      const randomPlayer = Math.floor(Math.random() * allPlayers.length)
+      const nextTurn = allPlayers[randomPlayer].user_id
+
+      const { error: gameError } = await supabase.from('game').update({
+        current_turn: nextTurn,
+      })
+
+      if (gameError) {
+        return { success: false, error: gameError, answer: null, message: null }
+      }
+
+      revalidatePath(`/rooms/${allPlayers[randomPlayer].room_id}`)
+
+      return {
+        success: true,
+        error: null,
+        answer: answerData,
+        message: 'Correct answer!',
+      }
+    }
+
+    return {
+      success: true,
+      error: null,
+      answer: answerData,
+      message: 'Incorrect answer!',
+    }
+  } catch (error) {
+    console.error(
+      'An unexpected error occurred while submitting answer:',
+      error
+    )
+
+    return { success: false, error: error, answer: null, message: null }
   }
 }
