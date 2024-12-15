@@ -206,7 +206,7 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
           onClick={handleExitRoom}
         />
       </div>
-      <div className='grid grid-cols-[1fr,2fr,1fr] w-full h-full gap-x-10'>
+      <div className='grid grid-cols-[1fr,2fr] w-full h-full gap-x-10'>
         <div className='h-full border-8 border-main'>
           <div className='w-full text-center font-bold text-2xl bg-main pb-2'>
             Players
