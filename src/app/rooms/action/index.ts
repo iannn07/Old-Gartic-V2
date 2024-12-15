@@ -380,7 +380,7 @@ export async function checkIfTheGameStarted(roomId: string) {
       return { ableToStart: false, data: null, error: gameError }
     }
 
-    console.log('The game has started:', data)
+    console.log('The game has started')
 
     return { ableToStart: false, data: gameData as GAME, error: null }
   } catch (error) {
@@ -535,6 +535,11 @@ export async function submitPaintingAnswer(painting: {
     const { data: userData, error: userDataError } = await getCurrentUser()
 
     if (userDataError || !userData) {
+      console.error(
+        'An error occurred while fetching user data:',
+        userDataError
+      )
+
       return { success: false, error: userDataError }
     }
 
@@ -542,7 +547,7 @@ export async function submitPaintingAnswer(painting: {
 
     const paintObject = {
       game_id: painting.game_id,
-      user_id: userId,
+      created_by: userId,
       answer: painting.answer,
       painting: painting.painting,
     }
@@ -562,20 +567,33 @@ export async function submitPaintingAnswer(painting: {
       return { success: false, error: paintingError }
     }
 
+    const { error: gameError } = await supabase
+      .from('game')
+      .update({ status: 'Answering' })
+      .eq('id', painting.game_id)
+      .single()
+
+    if (gameError) {
+      console.error('An error occurred while updating game:', gameError)
+
+      return { success: false, error: gameError }
+    }
+
     const { data: roomUserData, error: roomUserDataError } = await supabase
       .from('room_user')
       .select('*')
       .eq('game_id', painting.game_id)
-      .single()
 
     if (roomUserDataError) {
       console.error(
         'An error occurred while fetching room user data:',
         roomUserDataError
       )
+
+      return { success: false, error: roomUserDataError }
     }
 
-    revalidatePath(`/rooms/${roomUserData.room_id}`)
+    revalidatePath(`/rooms/${roomUserData[0].room_id}`)
 
     return { success: true, error: null }
   } catch (error) {
@@ -665,6 +683,8 @@ export async function submitAnswer(answer: string, gameId: string) {
       .single()
 
     if (answerError) {
+      console.error('An error occurred while submitting answer:', answerError)
+
       return { success: false, error: answerError, answer: null, message: null }
     }
 
@@ -675,6 +695,8 @@ export async function submitAnswer(answer: string, gameId: string) {
       .single()
 
     if (paintingError) {
+      console.error('An error occurred while fetching painting:', paintingError)
+
       return {
         success: false,
         error: paintingError,
@@ -692,6 +714,11 @@ export async function submitAnswer(answer: string, gameId: string) {
         .eq('game_id', gameId)
 
       if (allPlayersError) {
+        console.error(
+          'An error occurred while fetching all players:',
+          allPlayersError
+        )
+
         return {
           success: false,
           error: allPlayersError,
@@ -705,9 +732,12 @@ export async function submitAnswer(answer: string, gameId: string) {
 
       const { error: gameError } = await supabase.from('game').update({
         current_turn: nextTurn,
+        status: 'Drawing',
       })
 
       if (gameError) {
+        console.error('An error occurred while updating game:', gameError)
+
         return { success: false, error: gameError, answer: null, message: null }
       }
 

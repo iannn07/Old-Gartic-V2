@@ -1,8 +1,9 @@
 import { PAINTING } from '@/types/Painting'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import useSWR from 'swr'
 import { getSubmittedPainting } from '../../action'
 import Image from 'next/image'
+import { createSupabaseClient } from '@/utils/supabase/client'
 
 interface CanvasForInactivePlayerProps {
   gameId: string
@@ -23,10 +24,38 @@ function CanvasForInactivePlayer({ gameId }: CanvasForInactivePlayerProps) {
     },
   })
 
+  useEffect(() => {
+    const supabase = createSupabaseClient()
+
+    const subscription = supabase
+      .channel('public:painting')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'painting' },
+        (payload) => {
+          if (payload.new.game_id === gameId) {
+            setImage(payload.new as PAINTING)
+            setWaitingForImage(false)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(subscription)
+    }
+  }, [gameId])
+
   return waitingForImage ? (
     <div>Waiting for image...</div>
   ) : (
-    <Image src={image?.painting || ''} alt='image' width={400} height={400} />
+    <Image
+      src={image?.painting || ''}
+      alt='image'
+      width={400}
+      height={400}
+      className='bg-white w-full'
+    />
   )
 }
 

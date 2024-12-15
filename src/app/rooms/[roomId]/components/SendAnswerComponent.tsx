@@ -39,7 +39,7 @@ const SendAnswerComponent: React.FC<SendAnswerComponentProps> = ({
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           placeholder='Enter your guess...'
-          className='w-full p-2 border border-gray-300 rounded mb-4'
+          className='w-full p-2 border border-gray-300 rounded mb-4 text-black'
         />
         {error && <p className='text-red'>{error}</p>}
         {message && (

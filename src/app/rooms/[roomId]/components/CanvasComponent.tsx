@@ -187,7 +187,7 @@ const CanvasComponent = ({ gameId }: CanvasComponentProps) => {
       />
       <div className='flex flex-col gap-2'>
         <label>Answer:</label>
-        <input type='text' name='answer' className='px-1' />
+        <input type='text' name='answer' className='px-1 text-black' />
       </div>
       <div className='flex gap-4 mb-4'>
         <GarticButton label='Clear' variant='danger' onClick={handleClear} />

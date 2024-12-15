@@ -22,8 +22,6 @@ async function uploadFileToStorage(
       upsert: false,
     })
 
-  console.log({ data, error })
-
   if (error) {
     console.error('Error uploading file:', error.message)
 
@@ -48,8 +46,6 @@ export async function prepareFileBeforeUpload(
     const name = uuidv7()
     const extension = file.name.split('.').pop()
     const fileName = `${name}_${Date.now()}.${extension}`
-
-    console.log({ name, extension, fileName })
 
     const path = await uploadFileToStorage(storage, fileName, file)
 

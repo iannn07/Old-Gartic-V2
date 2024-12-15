@@ -338,7 +338,6 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
                       </span>
                     )}
                   </div>
-                  <h1 className='text-xl'>Score: {user?.score}</h1>
                 </div>
               </div>
             ))}
