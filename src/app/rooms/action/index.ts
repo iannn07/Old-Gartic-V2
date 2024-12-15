@@ -1,5 +1,6 @@
 'use server'
 
+import { GAME } from '@/types/Game'
 import { ROOMS_USER } from '@/types/Relationship'
 import { ROOMS } from '@/types/Rooms'
 import { USER } from '@/types/User'
@@ -337,6 +338,177 @@ export async function assignFirstUserAsHost(roomId: string) {
   }
 }
 
+/**
+ * * Check if the game has started
+ * @param roomId
+ * @returns
+ */
+export async function checkIfTheGameStarted(roomId: string) {
+  unstable_noStore()
+
+  const supabase = await createSupabaseServer()
+
+  try {
+    const { data, error } = await supabase
+      .from('room_user')
+      .select('*')
+      .not('game_id', 'is', null)
+      .eq('room_id', roomId)
+
+    if ((error && error.code === 'PGRST116') || data?.length === 0) {
+      console.error('The game has not started yet:', error)
+
+      return { ableToStart: true, data: null, error: null }
+    }
+
+    if (error) {
+      console.error('An error occurred while checking game:', error)
+
+      return { ableToStart: false, data: null, error: error }
+    }
+
+    console.log('The game has started:', data)
+
+    return { ableToStart: false, data: data, error: null }
+  } catch (error) {
+    console.error('An unexpected error occurred while checking game:', error)
+
+    return { ableToStart: false, data: null, error: error }
+  }
+}
+
+/**
+ * * Start the game
+ * @param roomId
+ * @param hostId
+ * @returns
+ */
+export async function startGame(roomId: string, hostId: string) {
+  unstable_noStore()
+
+  const supabase = await createSupabaseServer()
+
+  try {
+    const { data: gameData, error: gameError } = await supabase
+      .from('game')
+      .insert({
+        current_turn: hostId,
+        updated_at: new Date().toLocaleString(),
+      })
+      .select('*')
+      .single()
+
+    if (gameError) {
+      console.error('An error occurred while starting game:', gameError)
+
+      return { data: null, error: gameError }
+    }
+
+    const newGame: GAME = gameData
+
+    const { error } = await supabase
+      .from('room_user')
+      .update({ game_id: newGame.id })
+      .eq('room_id', roomId)
+
+    if (error) {
+      console.error('An error occurred while updating room:', error)
+
+      return { data: null, error: error }
+    }
+
+    revalidatePath(`/rooms/${roomId}`)
+  } catch (error) {
+    console.error('An unexpected error occurred while starting game:', error)
+
+    return { data: null, error: error }
+  }
+}
+
+/**
+ * * End the game
+ * @param roomId
+ * @returns
+ */
+export async function endGame(roomId: string) {
+  unstable_noStore()
+
+  const supabase = await createSupabaseServer()
+
+  console.log('Ending game:', roomId)
+
+  try {
+    const { data: roomUserData, error: roomUserDataError } = await supabase
+      .from('room_user')
+      .select('*')
+      .not('game_id', 'is', null)
+      .eq('room_id', roomId)
+
+    if (roomUserDataError) {
+      console.error(
+        'An error occurred while fetching ongoing game:',
+        roomUserDataError
+      )
+
+      return { success: false, error: roomUserDataError }
+    }
+
+    const { error: gameError } = await supabase
+      .from('game')
+      .delete()
+      .eq('id', roomUserData[0].game_id)
+      .single()
+
+    if (gameError) {
+      console.error('An error occurred while ending game:', gameError)
+
+      return { success: false, error: gameError }
+    }
+
+    const { error: updateRoomUserDataError } = await supabase
+      .from('room_user')
+      .delete()
+      .eq('room_id', roomId)
+
+    if (updateRoomUserDataError) {
+      console.error(
+        'An error occurred while updating room user data after ending game:',
+        updateRoomUserDataError
+      )
+
+      return { success: false, error: updateRoomUserDataError }
+    }
+
+    const { error: updateRoomDataError } = await supabase
+      .from('rooms')
+      .update({ active_player: 0 })
+      .eq('id', roomId)
+
+    if (updateRoomDataError) {
+      console.error(
+        'An error occurred while updating room data after ending game:',
+        updateRoomDataError
+      )
+
+      return { success: false, error: updateRoomDataError }
+    }
+
+    revalidatePath(`/rooms`)
+    revalidatePath(`/rooms/${roomId}`)
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('An unexpected error occurred while ending game:', error)
+
+    return { success: false, error: error }
+  }
+}
+
+/**
+ * * Track user turn
+ * @param gameId
+ * @returns
+ */
 export async function trackUserTurn(gameId: string) {
   unstable_noStore()
 

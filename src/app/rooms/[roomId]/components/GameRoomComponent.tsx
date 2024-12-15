@@ -8,13 +8,16 @@ import { USER } from '@/types/User'
 import { getCurrentUser } from '@/utils/auth/session'
 import { createSupabaseClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import useSWR from 'swr'
 import {
   assignFirstUserAsHost,
+  checkIfTheGameStarted,
+  endGame,
   getAllUsersInRoom,
   getSingleRoom,
   removeUserFromRoom,
+  startGame,
 } from '../../action'
 import CanvasComponent from './CanvasComponent'
 import SendAnswerComponent from './SendAnswerComponent'
@@ -31,6 +34,7 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
   const [roomUser, setRoomUser] = useState<ROOMS_USER[] | null>(null)
   const [isHost, setIsHost] = useState<boolean>(false)
   const [ableToStart, setAbleToStart] = useState<boolean>(false)
+  const [isTheGameStarted, setIsTheGameStarted] = useState<boolean>(false)
 
   const handleExitRoom = async () => {
     await removeUserFromRoom(roomId)
@@ -39,10 +43,20 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
   }
 
   const handleStartGame = async () => {
-    if (isHost && ableToStart) {
+    if (isHost && ableToStart && currentUser) {
+      await startGame(roomId, currentUser.id)
+      setIsTheGameStarted(true)
     }
   }
 
+  const handleEndGame = useCallback(async () => {
+    await endGame(roomId)
+
+    router.replace('/rooms')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Fetch the current user
   useSWR('currentUser', getCurrentUser, {
     onSuccess: (data) => {
       const { data: userData, error } = data
@@ -51,6 +65,7 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
     },
   })
 
+  // Fetch the current room
   useSWR('currentRoom', async () => await getSingleRoom(roomId), {
     onSuccess: (data) => {
       const { data: roomData, error } = data
@@ -59,6 +74,19 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
     },
   })
 
+  // Check if the game has started
+  useSWR('isTheGameStarted', async () => checkIfTheGameStarted(roomId), {
+    onSuccess: (data) => {
+      const { ableToStart, data: gameStartedData, error } = data
+      if (error) return
+
+      if (ableToStart) setAbleToStart(ableToStart)
+
+      if (gameStartedData) setIsTheGameStarted(true)
+    },
+  })
+
+  // Check if the user is the host of the room
   useSWR(
     roomId,
     async () => {
@@ -106,6 +134,29 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
     }
   }, [roomUser])
 
+  // isTheGameEnded update
+  useEffect(() => {
+    const supabase = createSupabaseClient()
+
+    const subscription = supabase
+      .channel('public:game')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'game' },
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            router.replace('/rooms')
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(subscription)
+    }
+  }, [router])
+
+  // Fetch all users in the room
   useSWR('roomUser', () => {
     let subscription: any
 
@@ -184,6 +235,8 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
     }
   })
 
+  console.log({ isTheGameStarted, isHost })
+
   return loading && !(roomUser && currentRoom) ? (
     <div className='w-full h-screen text-5xl font-bold'>Loading...</div>
   ) : !ableToStart ? (
@@ -192,19 +245,40 @@ function GameRoomComponent({ roomId }: GameRoomComponentProps) {
     </div>
   ) : (
     <div className='flex flex-col gap-10 w-full h-screen mt-20'>
-      <div className='flex w-full justify-between'>
+      <div className='flex w-full justify-between items-center'>
         <h1 className='text-5xl font-bold'>{currentRoom?.name}</h1>
-        <GarticButton
-          label='Start Game'
-          variant={!isHost ? 'danger' : 'main'}
-          onClick={handleStartGame}
-          disabled={!isHost || !ableToStart}
-        />
-        <GarticButton
-          label='Exit Room'
-          variant='danger'
-          onClick={handleExitRoom}
-        />
+        <div className='flex gap-4'>
+          {isHost && (
+            <>
+              {isTheGameStarted ? (
+                <GarticButton
+                  label='End Game'
+                  variant='danger'
+                  onClick={handleEndGame}
+                />
+              ) : (
+                <GarticButton
+                  label='Start Game'
+                  variant='main'
+                  onClick={handleStartGame}
+                  disabled={!ableToStart}
+                />
+              )}
+            </>
+          )}
+          {!isHost && !isTheGameStarted && (
+            <GarticButton
+              label='Waiting for host...'
+              variant='danger'
+              disabled
+            />
+          )}
+          <GarticButton
+            label='Exit Room'
+            variant='danger'
+            onClick={handleExitRoom}
+          />
+        </div>
       </div>
       <div className='grid grid-cols-[1fr,2fr] w-full h-full gap-x-10'>
         <div className='h-full border-8 border-main'>
